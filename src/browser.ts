@@ -18,16 +18,13 @@ import {puppeteer} from './third_party/index.js';
 
 let browser: Browser | undefined;
 
-function makeTargetFilter(devtools: boolean) {
+function makeTargetFilter() {
   const ignoredPrefixes = new Set([
     'chrome://',
     'chrome-extension://',
     'chrome-untrusted://',
   ]);
 
-  if (!devtools) {
-    ignoredPrefixes.add('devtools://');
-  }
   return function targetFilter(target: Target): boolean {
     if (target.url() === 'chrome://newtab/') {
       return true;
@@ -52,9 +49,9 @@ export async function ensureBrowserConnected(options: {
   }
 
   const connectOptions: Parameters<typeof puppeteer.connect>[0] = {
-    targetFilter: makeTargetFilter(options.devtools),
+    targetFilter: makeTargetFilter(),
     defaultViewport: null,
-    handleDevToolsAsPage: options.devtools,
+    handleDevToolsAsPage: true,
   };
 
   if (options.wsEndpoint) {
@@ -129,7 +126,7 @@ export async function launch(options: McpLaunchOptions): Promise<Browser> {
   try {
     const browser = await puppeteer.launch({
       channel: puppeteerChannel,
-      targetFilter: makeTargetFilter(options.devtools),
+      targetFilter: makeTargetFilter(),
       executablePath,
       defaultViewport: null,
       userDataDir,
@@ -137,7 +134,7 @@ export async function launch(options: McpLaunchOptions): Promise<Browser> {
       headless,
       args,
       acceptInsecureCerts: options.acceptInsecureCerts,
-      handleDevToolsAsPage: options.devtools,
+      handleDevToolsAsPage: true,
     });
     if (options.logFile) {
       // FIXME: we are probably subscribing too late to catch startup logs. We

@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'node:assert';
+import {readFile, rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {describe, it} from 'node:test';
 
 import {getMockRequest, getMockResponse, html, withBrowser} from './utils.js';
@@ -51,17 +54,22 @@ Testing 2`,
   it('returns correctly formatted snapshot for a simple tree', async () => {
     await withBrowser(async (response, context) => {
       const page = context.getSelectedPage();
-      await page.setContent(`<!DOCTYPE html>
-<button>Click me</button><input type="text" value="Input">`);
+      await page.setContent(
+        html`<button>Click me</button
+          ><input
+            type="text"
+            value="Input"
+          />`,
+      );
       await page.focus('button');
-      response.setIncludeSnapshot(true);
+      response.includeSnapshot();
       const result = await response.handle('test', context);
       assert.equal(result[0].type, 'text');
       assert.strictEqual(
         result[0].text,
         `# test response
 ## Page content
-uid=1_0 RootWebArea
+uid=1_0 RootWebArea "My test page"
   uid=1_1 button "Click me" focusable focused
   uid=1_2 textbox value="Input"
 `,
@@ -80,7 +88,7 @@ uid=1_0 RootWebArea
         /></label>`,
       );
       await page.focus('input');
-      response.setIncludeSnapshot(true);
+      response.includeSnapshot();
       const result = await response.handle('test', context);
       assert.equal(result[0].type, 'text');
       assert.strictEqual(
@@ -99,7 +107,9 @@ uid=1_0 RootWebArea "My test page"
     await withBrowser(async (response, context) => {
       const page = context.getSelectedPage();
       await page.setContent(html`<aside>test</aside>`);
-      response.setIncludeSnapshot(true, true);
+      response.includeSnapshot({
+        verbose: true,
+      });
       const result = await response.handle('test', context);
       assert.equal(result[0].type, 'text');
       assert.strictEqual(
@@ -115,6 +125,42 @@ uid=1_0 RootWebArea "My test page"
 `,
       );
     });
+  });
+
+  it('saves snapshot to file', async () => {
+    const filePath = join(tmpdir(), 'test-screenshot.png');
+    try {
+      await withBrowser(async (response, context) => {
+        const page = context.getSelectedPage();
+        await page.setContent(html`<aside>test</aside>`);
+        response.includeSnapshot({
+          verbose: true,
+          filePath,
+        });
+        const result = await response.handle('test', context);
+        assert.equal(result[0].type, 'text');
+        console.log(result[0].text);
+        assert.strictEqual(
+          result[0].text,
+          `# test response
+## Page content
+Saved snapshot to ${filePath}.`,
+        );
+      });
+      const content = await readFile(filePath, 'utf-8');
+      assert.strictEqual(
+        content,
+        `uid=1_0 RootWebArea "My test page"
+  uid=1_1 ignored
+    uid=1_2 ignored
+      uid=1_3 complementary
+        uid=1_4 StaticText "test"
+          uid=1_5 InlineTextBox "test"
+`,
+      );
+    } finally {
+      await rm(filePath, {force: true});
+    }
   });
 
   it('adds throttling setting when it is not null', async () => {
