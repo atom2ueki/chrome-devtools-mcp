@@ -330,10 +330,19 @@ Call ${handleDialog.name} to handle it before continuing.`);
     if (this.#includePages) {
       const parts = [`## Pages`];
       let idx = 0;
+      const selectedIdx = context.getSelectedPageIdx();
+      const activeIdx = context.getActivePageIdx();
+
       for (const page of context.getPages()) {
-        parts.push(
-          `${idx}: ${page.url()}${idx === context.getSelectedPageIdx() ? ' [selected]' : ''}`,
-        );
+        const markers: string[] = [];
+        if (idx === selectedIdx) {
+          markers.push('selected');
+        }
+        if (idx === activeIdx) {
+          markers.push('active');
+        }
+        const suffix = markers.length > 0 ? ` [${markers.join(', ')}]` : '';
+        parts.push(`${idx}: ${page.url()}${suffix}`);
         idx++;
       }
       response.push(...parts);

@@ -324,6 +324,17 @@ export class McpContext implements Context {
   }
 
   /**
+   * Get the index of the page that the browser has focused (active page).
+   * This uses a heuristic: the most recently created page (last in array)
+   * is typically the one the browser focuses when opened via user interaction.
+   */
+  getActivePageIdx(): number {
+    // If there are multiple pages, the last one is typically the active one
+    // (newly opened tabs are added at the end and browser focuses them)
+    return this.#pages.length > 0 ? this.#pages.length - 1 : 0;
+  }
+
+  /**
    * Creates a text snapshot of a page.
    */
   async createTextSnapshot(verbose = false): Promise<void> {
