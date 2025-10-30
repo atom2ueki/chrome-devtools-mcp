@@ -15,11 +15,19 @@ fi
 echo "💾 Backing up package.json..."
 cp package.json package.json.backup
 
+# Get current version and increment patch version
+CURRENT_VERSION=$(jq -r '.version' package.json)
+echo "📌 Current version: $CURRENT_VERSION"
+
+# Increment patch version (e.g., 0.9.0 -> 0.9.1)
+NEW_VERSION=$(echo "$CURRENT_VERSION" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+echo "🔢 New version: $NEW_VERSION"
+
 # Modify package.json for @sphtech-platform
 echo "✏️  Modifying package.json for @sphtech-platform..."
-jq '
+jq --arg version "$NEW_VERSION" '
   .name = "@sphtech-platform/chrome-devtools-mcp" |
-  .description = "MCP server for Chrome DevTools (SPH custom fork with active page tracking)" |
+  .version = $version |
   .repository = {
     "type": "git",
     "url": "git+https://github.com/atom2ueki/chrome-devtools-mcp.git"
