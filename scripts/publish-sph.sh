@@ -37,9 +37,9 @@ jq '
 
 mv package.json.tmp package.json
 
-# Build
-echo "🔨 Building..."
-npm run build
+# Build and bundle
+echo "🔨 Building and bundling..."
+npm run bundle
 
 # Publish
 echo "🚀 Publishing to GitHub Packages..."
